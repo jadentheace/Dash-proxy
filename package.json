@@ -1,0 +1,1 @@
+{"name":"dash-proxy","version":"1.0.0","description":"Stratum proxy for Dash mining","main":"index.js","scripts":{"start":"node index.js"},"dependencies":{"coin-hive-stratum":"^1.2.0"}}
