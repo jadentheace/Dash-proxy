@@ -1,22 +1,32 @@
 const Net = require('net');
 const WebSocket = require('ws');
 
-// THE CORE PIPE: Blog -> Render -> Mining-Dutch
+// REDIRECTING FROM ZPOOL TO MINING-DUTCH
 const POOL_HOST = 'dash.mining-dutch.nl';
-const POOL_PORT = 3333; // X11 Port
+const POOL_PORT = 3333; 
 
 const wss = new WebSocket.Server({ port: process.env.PORT || 3000 });
 
 wss.on('connection', (ws) => {
-    const client = new Net.Socket();
-    client.connect(POOL_PORT, POOL_HOST, () => {
-        console.log("CONNECTED TO DUTCH POOL");
+    const poolSocket = new Net.Socket();
+    
+    poolSocket.connect(POOL_PORT, POOL_HOST, () => {
+        console.log("SUCCESS: Connected to Mining-Dutch X11");
     });
 
-    ws.on('message', (msg) => { client.write(msg + '\n'); });
-    client.on('data', (data) => { ws.send(data.toString()); });
-    
-    ws.on('close', () => client.destroy());
-    client.on('error', () => ws.terminate());
+    ws.on('message', (data) => {
+        poolSocket.write(data + '\n');
+    });
+
+    poolSocket.on('data', (data) => {
+        ws.send(data.toString());
+    });
+
+    ws.on('close', () => poolSocket.destroy());
+    poolSocket.on('error', (err) => {
+        console.log("Pool Error: " + err.message);
+        ws.terminate();
+    });
 });
-console.log("PROXY ENGINE ACTIVE");
+
+console.log("DASH PROXY ONLINE");
