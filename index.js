@@ -1,21 +1,21 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// Using MiningDutch - High compatibility for mobile tunnels
-const POOL_HOST = 'dash.miningdutch.nl';
-const POOL_PORT = 4253; 
+// STRICTLY VIABTC AS REQUESTED
+const POOL_HOST = 'dash.viabtc.top';
+const POOL_PORT = 8888; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`TUNNEL_SYSTEM_ONLINE_${PORT}`);
+    console.log(`VIABTC_BRIDGE_ACTIVE_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.setKeepAlive(true, 5000); // Prevents the 'Lost Signal' loop
+    pool.setKeepAlive(true, 5000); 
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('TUNNEL_LINK_SUCCESS');
+        console.log('VIABTC_LINK_ESTABLISHED');
     });
 
     ws.on('message', (msg) => {
@@ -27,5 +27,6 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => pool.destroy());
+    pool.on('close', () => ws.close());
     pool.on('error', () => pool.destroy());
 });
