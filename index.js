@@ -11,14 +11,10 @@ const wss = new WebSocket.Server({ port: PORT }, () => {
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    
-    // KEEP-ALIVE SYSTEM TO PREVENT RENDER TIMEOUTS
-    const heartbeat = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.ping();
-    }, 30000);
+    pool.setKeepAlive(true, 10000); // FORCES CONNECTION TO STAY OPEN
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('ZERGPOOL_STABLE_LINK_ESTABLISHED');
+        console.log('ZERGPOOL_VAR_DIFF_LOCKED');
     });
 
     ws.on('message', (msg) => {
@@ -29,10 +25,7 @@ wss.on('connection', (ws) => {
         if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
     });
 
-    ws.on('close', () => {
-        clearInterval(heartbeat);
-        pool.destroy();
-    });
+    ws.on('close', () => pool.destroy());
     pool.on('close', () => ws.close());
     pool.on('error', () => pool.destroy());
 });
