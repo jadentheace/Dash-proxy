@@ -1,18 +1,46 @@
-// NEW RENDER PROXY FOR ZPOOL (Yescrypt Algo)
 const net = require('net');
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 10000 });
-const POOL_HOST = 'yescrypt.na.mine.zpool.ca'; // North America Stratum
-const POOL_PORT = 6233; // Port for Yescrypt
+// PORT 6233 is the high-speed CPU lane for ZPool
+const TARGET_HOST = 'yescrypt.mine.zpool.ca';
+const TARGET_PORT = 6233;
+const PROXY_PORT = process.env.PORT || 8080;
+
+const wss = new WebSocket.Server({ port: PROXY_PORT });
 
 wss.on('connection', (ws) => {
-    console.log("SYNC: Mobile connected to ZPool Bridge");
-    const stratum = net.createConnection(POOL_PORT, POOL_HOST);
+    console.log('CLIENT_CONNECTED -> BRIDGE_OPEN');
 
-    stratum.on('data', (data) => ws.send(data.toString()));
-    ws.on('message', (msg) => stratum.write(msg + '\n'));
+    const stratum = net.createConnection(TARGET_PORT, TARGET_HOST, () => {
+        console.log(`LINKED_TO_ZPOOL_ALGO: ${TARGET_HOST}:${TARGET_PORT}`);
+    });
 
-    stratum.on('error', (err) => console.log("ZPOOL_ERR: " + err.message));
-    ws.on('close', () => console.log("ZPOOL_DISCONNECT"));
+    ws.on('message', (message) => {
+        // Relay from phone to ZPool
+        stratum.write(message + '\n');
+    });
+
+    stratum.on('data', (data) => {
+        // Relay from ZPool to phone
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data.toString());
+        }
+    });
+
+    ws.on('close', () => {
+        console.log('CLIENT_DISCONNECTED');
+        stratum.end();
+    });
+
+    stratum.on('error', (err) => {
+        console.log('STRATUM_ERR: ' + err.message);
+        ws.close();
+    });
+
+    ws.on('error', (err) => {
+        console.log('WS_ERR: ' + err.message);
+        stratum.end();
+    });
 });
+
+console.log(`PROXY_ACTIVE_ON_PORT_${PROXY_PORT}`);
