@@ -1,20 +1,21 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-const POOL_HOST = 'dash.zergpool.com';
-const POOL_PORT = 4253; 
+// SWITCHING TO VIABTC (MOST RELIABLE FOR CLOUD BRIDGES)
+const POOL_HOST = 'dash.viabtc.top';
+const POOL_PORT = 8888; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`TITAN_BRIDGE_ACTIVE_${PORT}`);
+    console.log(`FINAL_BRIDGE_STABLE_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.setNoDelay(false); // Enable buffering to stabilize 5G
+    pool.setNoDelay(true);
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('TITAN_LINK_STABLE');
+        console.log('VIABTC_LINK_LOCKED');
     });
 
     ws.on('message', (msg) => {
@@ -27,8 +28,5 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => pool.destroy());
     pool.on('close', () => ws.close());
-    pool.on('error', (err) => {
-        console.log('POOL_ERR:', err.message);
-        pool.destroy();
-    });
+    pool.on('error', () => pool.destroy());
 });
