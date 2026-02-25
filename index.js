@@ -10,6 +10,11 @@ const wss = new WebSocket.Server({ port: PORT });
 wss.on('connection', (ws) => {
     const pool = tls.connect(POOL_PORT, POOL_HOST, { rejectUnauthorized: false });
 
+    // Keep the connection from idling
+    const heartbeat = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.ping();
+    }, 30000);
+
     pool.on('data', (data) => {
         if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
     });
@@ -18,6 +23,8 @@ wss.on('connection', (ws) => {
         if (!pool.destroyed) pool.write(msg + "\n");
     });
 
-    pool.on('error', (e) => console.log("Pool Error:", e.message));
-    ws.on('close', () => pool.destroy());
+    ws.on('close', () => {
+        clearInterval(heartbeat);
+        pool.destroy();
+    });
 });
