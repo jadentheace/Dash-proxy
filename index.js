@@ -1,32 +1,31 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-const POOL_HOST = 'dash.viabtc.top';
-const POOL_PORT = 3333;
-const PORT = process.env.PORT || 10000;
-
-const wss = new WebSocket.Server({ port: PORT });
+const wss = new WebSocket.Server({ port: 10000 }); // Render uses port 10000
+const POOL_HOST = 'dash.viabtc.top'; 
+const POOL_PORT = 8888;
 
 wss.on('connection', (ws) => {
-    const pool = net.connect(POOL_PORT, POOL_HOST);
-    pool.setNoDelay(true);
+    console.log("LOG: Phone connected to Proxy");
+    const stratum = net.createConnection(POOL_PORT, POOL_HOST);
 
-    // Keep-alive heartbeat to prevent pool timeout
-    const heartbeat = setInterval(() => {
-        if (!pool.destroyed) pool.write('{"id":20,"method":"mining.get_transactions","params":[]}\n');
-    }, 25000);
-
-    pool.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
+    stratum.on('connect', () => {
+        console.log("LOG: Proxy connected to Viabtc Dash Pool");
     });
 
+    // Pipe data from Pool to Phone
+    stratum.on('data', (data) => {
+        console.log("LOG: Job received from Pool -> Sending to Phone");
+        ws.send(data.toString());
+    });
+
+    // Pipe data from Phone to Pool
     ws.on('message', (msg) => {
-        if (!pool.destroyed) pool.write(msg.trim() + "\n");
+        stratum.write(msg + '\n');
     });
 
-    pool.on('error', () => pool.destroy());
-    ws.on('close', () => {
-        clearInterval(heartbeat);
-        pool.destroy();
-    });
+    stratum.on('error', (err) => console.log("POOL_ERROR: " + err.message));
+    ws.on('error', (err) => console.log("PHONE_ERROR: " + err.message));
 });
+
+console.log("Proxy Bridge Active on Port 10000");
