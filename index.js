@@ -8,19 +8,21 @@ const PORT = process.env.PORT || 10000;
 const wss = new WebSocket.Server({ port: PORT });
 
 wss.on('connection', (ws) => {
-    // Establishing a high-priority TLS link to the pool
+    // Open a raw SSL tunnel to ViaBTC
     const pool = tls.connect(POOL_PORT, POOL_HOST, { rejectUnauthorized: false });
 
-    // Stream incoming pool data directly to the phone's UI
     pool.on('data', (chunk) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(chunk.toString());
+        // Send RAW data immediately to your iPhone
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(chunk.toString('utf8'));
+        }
     });
 
-    // Stream phone requests directly to the pool
     ws.on('message', (msg) => {
+        // Push your iPhone's requests directly into the pool
         if (!pool.destroyed) pool.write(msg + '\n');
     });
 
-    pool.on('error', (e) => console.log('POOL_ERR:', e.message));
+    pool.on('error', (err) => console.log("Pool Sync Error: ", err));
     ws.on('close', () => pool.destroy());
 });
