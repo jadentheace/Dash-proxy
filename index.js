@@ -2,35 +2,39 @@ const WebSocket = require('ws');
 const net = require('net');
 
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
-
-// TARGET: Official VerusPool.io
 const POOL_HOST = 'na.veruspool.io';
 const POOL_PORT = 9999; 
 
 wss.on('connection', (ws) => {
+    console.log('--- NEW BLOG CONNECTION DETECTED ---');
     const pool = new net.Socket();
     
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('Connected to VerusPool Official');
+        console.log('CONNECTED TO VERUSPOOL CLUSTER');
     });
 
-    // Pass iPhone commands to Pool
     ws.on('message', (message) => {
+        // Log the login attempt to your Render dashboard
+        console.log('DATA FROM BLOG:', message.toString());
         if (pool.writable) {
             pool.write(message + '\n');
         }
     });
 
-    // Pass Pool jobs back to iPhone
     pool.on('data', (data) => {
+        // Send real pool data back to the blog terminal
         ws.send(data.toString());
     });
 
-    // Hard-Sync: Prevents connection drops
-    const ping = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type: "ping"}));
-    }, 25000);
+    pool.on('error', (err) => {
+        console.log('POOL ERROR:', err.message);
+        ws.send(JSON.stringify({type: "error", msg: "POOL_TIMEOUT"}));
+    });
 
-    ws.on('close', () => { clearInterval(ping); pool.destroy(); });
-    pool.on('error', () => ws.terminate());
+    ws.on('close', () => {
+        console.log('BLOG DISCONNECTED');
+        pool.destroy();
+    });
 });
+
+console.log('PROXY ACTIVE ON PORT', process.env.PORT || 8080);
