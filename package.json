@@ -1,12 +1,12 @@
 {
-  "name": "gz-miner-bridge",
+  "name": "dash-proxy",
   "version": "1.0.0",
-  "description": "High-speed stratum bridge",
+  "description": "High-speed mining bridge",
   "main": "index.js",
-  "dependencies": {
-    "ws": "^8.13.0"
-  },
   "scripts": {
     "start": "node index.js"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
   }
 }
