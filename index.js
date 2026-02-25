@@ -1,21 +1,28 @@
-const net = require('net');
+// Updated index.js for Official VerusPool (VRSC) 
 const WebSocket = require('ws');
+const net = require('net');
 
-const TARGET_HOST = 'mine.zpool.ca'; 
-const TARGET_PORT = 6234; 
-const PROXY_PORT = process.env.PORT || 8080;
+const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
-const wss = new WebSocket.Server({ port: PROXY_PORT });
+// TARGET: VerusPool.io (Official Pool)
+const POOL_HOST = 'na.veruspool.io'; // North America server
+const POOL_PORT = 9999; // Standard VerusHash port
 
 wss.on('connection', (ws) => {
-    const stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
-    stratum.setNoDelay(true); 
-    stratum.setKeepAlive(true, 10000);
+    const pool = new net.Socket();
+    pool.connect(POOL_PORT, POOL_HOST, () => { console.log('Connected to Official VerusPool'); });
 
-    ws.on('message', (msg) => { stratum.write(msg + '\n'); });
-    stratum.on('data', (data) => { if (ws.readyState === WebSocket.OPEN) ws.send(data.toString()); });
-    ws.on('close', () => stratum.destroy());
-    stratum.on('error', () => ws.close());
+    ws.on('message', (message) => {
+        pool.write(message + '\n'); // Forwarding miner commands
+    });
+
+    pool.on('data', (data) => {
+        ws.send(data.toString()); // Sending pool jobs back to iPhone
+    });
+
+    ws.on('close', () => pool.destroy());
+    pool.on('error', (err) => {
+        console.error('Pool Connection Error:', err);
+        ws.terminate();
+    });
 });
-
-console.log(`OMNI_BRIDGE_LIVE: READY_FOR_PROFIT_SWITCH`);
