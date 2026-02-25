@@ -1,16 +1,16 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// SWITCHING TO REGION-SPECIFIC RANDOMX HUB
-const TARGET_HOST = 'randomx.us.mine.zpool.ca'; 
-const TARGET_PORT = 6234; 
+// BACK TO YESPOWER BUT WITH ZERO LATENCY
+const TARGET_HOST = 'yespower.mine.zpool.ca'; 
+const TARGET_PORT = 6233; 
 const PROXY_PORT = process.env.PORT || 8080;
 
 const wss = new WebSocket.Server({ port: PROXY_PORT });
 
 wss.on('connection', (ws) => {
     const stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
-    stratum.setNoDelay(true); 
+    stratum.setNoDelay(true); // ZERO LAG: Sends jobs the microsecond they appear
 
     ws.on('message', (msg) => { stratum.write(msg + '\n'); });
 
@@ -24,4 +24,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Nitro Proxy Region Locked: US-RANDOMX`);
+console.log(`Turbo Yespower Proxy Active on Port ${TARGET_PORT}`);
