@@ -6,27 +6,25 @@ const POOL_PORT = 443;
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`GHOST_NODE_ON_${PORT}`);
+    console.log(`GHOST_NODE_V207_ONLINE_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
+    // Establishing the Secure Tunnel to ViaBTC
     const pool = tls.connect(POOL_PORT, POOL_HOST, { rejectUnauthorized: false }, () => {
-        console.log('ENCRYPTED_HANDSHAKE_SUCCESS');
+        console.log('ENCRYPTED_TUNNEL_ACTIVE');
     });
 
     ws.on('message', (msg) => {
+        // Direct pass-through: No simulation, just raw data transmission
         if (!pool.destroyed) pool.write(msg + '\n');
     });
 
     pool.on('data', (data) => {
+        // Send exactly what the pool returns back to the iPhone
         if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
     });
 
-    // 15s Heartbeat to keep ViaBTC from dropping the ghost link
-    const pulse = setInterval(() => {
-        if (!pool.destroyed) pool.write('{"id":20,"method":"mining.noop","params":[]}\n');
-    }, 15000);
-
-    ws.on('close', () => { clearInterval(pulse); pool.destroy(); });
+    ws.on('close', () => pool.destroy());
     pool.on('error', () => pool.destroy());
 });
