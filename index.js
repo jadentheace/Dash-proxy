@@ -1,24 +1,23 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-// Binding to Port 10000 as required by your Render logs
-const PORT = process.env.PORT || 10000;
-const wss = new WebSocket.Server({ port: PORT });
+const port = process.env.PORT || 10000; 
+const wss = new WebSocket.Server({ port: port });
 
 const POOL_HOST = 'na.veruspool.io';
 const POOL_PORT = 9999; 
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('--- STRATUM CONNECTION LIVE ---');
+        console.log('HANDSHAKE_READY');
     });
 
     ws.on('message', (message) => {
-        // MANDATORY FIX: Stratum pools require a newline to process commands
+        let msgStr = message.toString().trim();
+        // FORCE the pool to read the command by adding the newline
         if (pool.writable) {
-            pool.write(message + '\n'); 
+            pool.write(msgStr + '\n');
         }
     });
 
@@ -28,11 +27,8 @@ wss.on('connection', (ws) => {
         }
     });
 
-    pool.on('error', (err) => {
-        console.log('Pool side error:', err.message);
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({type: "error", msg: "POOL_DISCONNECT"}));
-        }
+    pool.on('error', () => {
+        setTimeout(() => pool.connect(POOL_PORT, POOL_HOST), 1000);
     });
 
     ws.on('close', () => pool.destroy());
