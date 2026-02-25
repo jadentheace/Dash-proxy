@@ -1,33 +1,28 @@
 const WebSocket = require('ws');
-const http = require('http');
+const net = require('net');
 
-// CRITICAL: process.env.PORT is how Render opens Port 443 to the world
-const port = process.env.PORT || 4444; 
-
-const server = http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end("DASH PROXY ACTIVE ON PORT 443");
-});
-
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ port: 443 });
+const POOL_HOST = 'mining-dutch.nl';
+const POOL_PORT = 3533; // DASH X11 Port
 
 wss.on('connection', (ws) => {
-    console.log("iPhone Connected via Port 443 Tunnel");
-    
-    // Replace with your Mining-Dutch details
-    const poolSocket = new WebSocket('wss://mining-dutch.nl:4444'); 
+    console.log('iPhone connected to Bridge');
+    const pool = new net.Socket();
 
+    pool.connect(POOL_PORT, POOL_HOST, () => {
+        console.log('Bridge connected to Mining-Dutch');
+    });
+
+    // Send data from Phone -> Pool
     ws.on('message', (message) => {
-        if (poolSocket.readyState === WebSocket.OPEN) {
-            poolSocket.send(message);
-        }
+        pool.write(message + '\n');
     });
 
-    poolSocket.on('message', (data) => {
-        ws.send(data);
+    // Send data from Pool -> Phone
+    pool.on('data', (data) => {
+        ws.send(data.toString());
     });
-});
 
-server.listen(port, () => {
-    console.log(`Server live on internal port: ${port}`);
+    pool.on('error', (err) => console.log('Pool Error:', err));
+    ws.on('close', () => pool.destroy());
 });
