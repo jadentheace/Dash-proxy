@@ -1,8 +1,8 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// SWITCHING FROM GENERAL HUB TO THE DEDICATED RANDOMX REGION
-const TARGET_HOST = 'randomx.mine.zpool.ca'; 
+// SWITCHING TO REGION-SPECIFIC RANDOMX HUB
+const TARGET_HOST = 'randomx.us.mine.zpool.ca'; 
 const TARGET_PORT = 6234; 
 const PROXY_PORT = process.env.PORT || 8080;
 
@@ -24,4 +24,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Nitro Proxy Forced to RandomX Sub-Server: ${TARGET_HOST}`);
+console.log(`Nitro Proxy Region Locked: US-RANDOMX`);
