@@ -1,31 +1,18 @@
+// NEW RENDER PROXY FOR ZPOOL (Yescrypt Algo)
 const net = require('net');
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 10000 }); // Render uses port 10000
-const POOL_HOST = 'dash.viabtc.top'; 
-const POOL_PORT = 8888;
+const wss = new WebSocket.Server({ port: 10000 });
+const POOL_HOST = 'yescrypt.na.mine.zpool.ca'; // North America Stratum
+const POOL_PORT = 6233; // Port for Yescrypt
 
 wss.on('connection', (ws) => {
-    console.log("LOG: Phone connected to Proxy");
+    console.log("SYNC: Mobile connected to ZPool Bridge");
     const stratum = net.createConnection(POOL_PORT, POOL_HOST);
 
-    stratum.on('connect', () => {
-        console.log("LOG: Proxy connected to Viabtc Dash Pool");
-    });
+    stratum.on('data', (data) => ws.send(data.toString()));
+    ws.on('message', (msg) => stratum.write(msg + '\n'));
 
-    // Pipe data from Pool to Phone
-    stratum.on('data', (data) => {
-        console.log("LOG: Job received from Pool -> Sending to Phone");
-        ws.send(data.toString());
-    });
-
-    // Pipe data from Phone to Pool
-    ws.on('message', (msg) => {
-        stratum.write(msg + '\n');
-    });
-
-    stratum.on('error', (err) => console.log("POOL_ERROR: " + err.message));
-    ws.on('error', (err) => console.log("PHONE_ERROR: " + err.message));
+    stratum.on('error', (err) => console.log("ZPOOL_ERR: " + err.message));
+    ws.on('close', () => console.log("ZPOOL_DISCONNECT"));
 });
-
-console.log("Proxy Bridge Active on Port 10000");
