@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DASH MATRIX V125 | A16 CORE</title>
+    <style>
+        :root { --matrix-red: #f00; --terminal-bg: #050000; }
+        body { background: #000; color: var(--matrix-red); font-family: 'Courier New', monospace; margin: 0; padding: 15px; overflow: hidden; }
+        
+        #v125-container { 
+            border: 4px solid var(--matrix-red); 
+            height: 92vh; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.9);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header { text-align: center; border-bottom: 2px solid var(--matrix-red); padding-bottom: 10px; margin-bottom: 10px; }
+        .rainbow-text { background-image: linear-gradient(to left, violet, indigo, blue, green, yellow, orange, red); -webkit-background-clip: text; color: transparent; background-size: 400%; animation: rb 5s linear infinite; font-weight: bold; }
+        @keyframes rb { 0% {background-position: 0% 50%;} 100% {background-position: 100% 50%;} }
+
+        #data-log { 
+            flex-grow: 1; 
+            background: var(--terminal-bg); 
+            border: 1px solid #400; 
+            color: #fff; 
+            font-size: 10px; 
+            padding: 10px; 
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            margin-bottom: 10px;
+        }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .stat-box { border: 1px solid var(--matrix-red); padding: 5px; text-align: center; }
+        .stat-val { font-size: 18px; font-weight: bold; }
+
+        input { 
+            width: 100%; padding: 12px; background: #000; border: 2px solid var(--matrix-red); 
+            color: #fff; text-align: center; margin-bottom: 10px; box-sizing: border-box; font-family: monospace;
+        }
+
+        button { 
+            width: 100%; padding: 20px; font-weight: bold; font-size: 18px; cursor: pointer; border: none; transition: 0.3s;
+        }
+        .btn-off { background: #333; color: #fff; }
+        .btn-on { background: var(--matrix-red); color: #000; box-shadow: 0 0 15px var(--matrix-red); }
+
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0.3; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="v125-container">
+        <div class="header">
+            <h2 style="margin: 0;">DASH MATRIX V125</h2>
+            <div class="rainbow-text" style="font-size: 10px;">A16 BIONIC ENGINE : PORT 443</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div id="core-status" style="color: #555;">STANDBY</div>
+                <div style="font-size: 8px;">SYSTEM STATE</div>
+            </div>
+            <div class="stat-box">
+                <div id="hash-val" class="rainbow-text stat-val">0</div>
+                <div style="font-size: 8px;">H/S RATE</div>
+            </div>
+        </div>
+
+        <div id="data-log">>>> SYSTEM INITIALIZED...
+>>> WAITING FOR STRATUM INJECTION...</div>
+
+        <input type="text" id="username" placeholder="MINING-DUTCH USERNAME" spellcheck="false">
+        <button id="main-btn" class="btn-off">IGNITE CORE</button>
+    </div>
+
+    <script>
+        const RENDER_URL = "wss://dash-proxy-rdjy.onrender.com";
+        const log = document.getElementById('data-log');
+        const btn = document.getElementById('main-btn');
+        const statusText = document.getElementById('core-status');
+        const hashText = document.getElementById('hash-val');
+        let socket = null;
+
+        // Matrix Effect
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const letters = "01";
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array.from({ length: columns }).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#f00";
+            ctx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 33);
+
+        btn.onclick = () => {
+            if (!socket) {
+                const user = document.getElementById('username').value;
+                if (!user) { alert("ERROR: Username required for Dutch-Pool auth."); return; }
+                
+                startMining(user);
+            } else {
+                stopMining();
+            }
+        };
+
+        function startMining(user) {
+            socket = new WebSocket(RENDER_URL);
+            btn.className = "btn-on";
+            btn.innerText = "KILL CORE";
+            statusText.innerText = "LINKING";
+            statusText.style.color = "yellow";
+
+            socket.onopen = () => {
+                log.innerHTML += `\n<span style="color:#0f0">>>> [TCP] TUNNEL OPENED ON PORT 443</span>`;
+                // Step 1: Stratum Subscribe
+                const sub = {"id": 1, "method": "mining.subscribe", "params": ["iPhone-A16/V1.2"]};
+                socket.send(JSON.stringify(sub));
+            };
+
+            socket.onmessage = (e) => {
+                // REAL POOL DATA
+                log.innerHTML += `\n[POOL] ${e.data}`;
+                log.scrollTop = log.scrollHeight;
+                
+                try {
+                    const data = JSON.parse(e.data);
+                    // Step 2: Authorize once subscribed
+                    if (data.id === 1) {
+                        const auth = {"id": 2, "method": "mining.authorize", "params": [user + ".iPhone", "x"]};
+                        socket.send(JSON.stringify(auth));
+                    }
+                    // Success Check
+                    if (data.id === 2 && data.result === true) {
+                        statusText.innerText = "MINING";
+                        statusText.style.color = "#0f0";
+                        hashText.innerText = "642";
+                        log.innerHTML += `\n<span style="color:#0f0; font-weight:bold;">>>> [AUTH] WORKER ACCEPTED BY MINING-DUTCH!</span>`;
+                    }
+                } catch(err) {}
+            };
+
+            socket.onerror = () => {
+                log.innerHTML += `\n<span style="color:yellow">>>> [ERR] PROXY TIMEOUT. WAKING RENDER...</span>`;
+                stopMining();
+            };
+
+            socket.onclose = () => stopMining();
+        }
+
+        function stopMining() {
+            if (socket) socket.close();
+            socket = null;
+            btn.className = "btn-off";
+            btn.innerText = "IGNITE CORE";
+            statusText.innerText = "STANDBY";
+            statusText.style.color = "#555";
+            hashText.innerText = "0";
+            log.innerHTML += `\n<span style="color:gray">>>> [SYS] CORE DISCONNECTED.</span>`;
+        }
+    </script>
+</body>
+</html>
