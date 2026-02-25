@@ -1,22 +1,20 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// Using Zergpool's most stable Dash port
 const POOL_HOST = 'dash.zergpool.com';
 const POOL_PORT = 4253; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`BRIDGE_LIVE_PORT_${PORT}`);
+    console.log(`TITAN_BRIDGE_ACTIVE_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    // Disable Nagle's Algorithm for instant data transfer
-    pool.setNoDelay(true);
+    pool.setNoDelay(false); // Enable buffering to stabilize 5G
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('POOL_LINK_ESTABLISHED');
+        console.log('TITAN_LINK_STABLE');
     });
 
     ws.on('message', (msg) => {
@@ -29,5 +27,8 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => pool.destroy());
     pool.on('close', () => ws.close());
-    pool.on('error', () => pool.destroy());
+    pool.on('error', (err) => {
+        console.log('POOL_ERR:', err.message);
+        pool.destroy();
+    });
 });
