@@ -1,7 +1,6 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// TARGETING THE HIGHEST VELOCITY CPU PORT FOR IPHONE 14
 const TARGET_HOST = 'randomx.mine.zpool.ca';
 const TARGET_PORT = 6234; 
 const PROXY_PORT = process.env.PORT || 8080;
@@ -10,7 +9,14 @@ const wss = new WebSocket.Server({ port: PROXY_PORT });
 
 wss.on('connection', (ws) => {
     const stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
-    stratum.setNoDelay(true); // ZERO-LATENCY MODE: FORCES IMMEDIATE DATA FLOW
+    stratum.setNoDelay(true);
+
+    // HEARTBEAT: Force the pool to stay high-priority
+    const heartbeat = setInterval(() => {
+        if (stratum.writable) {
+            stratum.write(JSON.stringify({"id":99,"method":"mining.suggest_difficulty","params":[0.0001]}) + '\n');
+        }
+    }, 5000); 
 
     ws.on('message', (msg) => { stratum.write(msg + '\n'); });
 
@@ -20,9 +26,12 @@ wss.on('connection', (ws) => {
         }
     });
 
-    stratum.on('connect', () => console.log("NITRO_LINK_ESTABLISHED"));
-    ws.on('close', () => stratum.destroy());
+    ws.on('close', () => {
+        clearInterval(heartbeat);
+        stratum.destroy();
+    });
+    
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Nitro Proxy Active: ${PROXY_PORT} -> ${TARGET_HOST}:${TARGET_PORT}`);
+console.log(`Heartbeat Proxy Active: ${TARGET_HOST}:${TARGET_PORT}`);
