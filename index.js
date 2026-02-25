@@ -9,18 +9,19 @@ const POOL_PORT = 3533;
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.setKeepAlive(true, 10000);
+    pool.setKeepAlive(true, 5000); // Keeps the A16 link from timing out
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('TCP: Connected to Netherlands');
+        console.log('HANDSHAKE: Connected to Netherlands');
     });
 
     ws.on('message', (msg) => {
-        // Cleaning the message to ensure no double-newlines
-        pool.write(msg.trim() + '\n');
+        // We trim and add a formal newline to match Stratum requirements
+        pool.write(msg.toString().trim() + '\n');
     });
 
     pool.on('data', (data) => {
+        // Forward pool data back to the iPhone log
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(data.toString());
         }
