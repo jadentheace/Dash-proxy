@@ -1,30 +1,37 @@
 const tls = require('tls');
 const WebSocket = require('ws');
 
+// Explicitly targeting the secure stratum port
 const POOL_HOST = 'dash.viabtc.top';
 const POOL_PORT = 443; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`DIAGNOSTIC_MODE_V213_ON_PORT_${PORT}`);
+    console.log(`V213_LIVE_BRIDGE_ACTIVE_ON_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
+    // Create the secure outbound tunnel
     const pool = tls.connect(POOL_PORT, POOL_HOST, { rejectUnauthorized: false }, () => {
-        console.log('--- CONNECTED_TO_VIABTC_SSL ---');
+        console.log('>>> TUNNEL_OUTBOUND_ESTABLISHED');
     });
 
     ws.on('message', (msg) => {
-        console.log('IPHONE_SENT:', msg.toString().trim());
-        if (!pool.destroyed) pool.write(msg + '\n');
+        // Forward iPhone data to ViaBTC
+        if (!pool.destroyed) {
+            pool.write(msg + '\n');
+            console.log('TX_POOL:', msg.toString().trim());
+        }
     });
 
     pool.on('data', (data) => {
-        // THIS IS THE KEY: We are going to see exactly why it fails
-        console.log('POOL_REPLY:', data.toString().trim());
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
+        // Forward ViaBTC data to iPhone
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data.toString());
+            console.log('RX_POOL:', data.toString().trim());
+        }
     });
 
-    ws.on('close', () => { console.log('IPHONE_DISCONNECTED'); pool.destroy(); });
-    pool.on('error', (e) => console.log('POOL_CONNECTION_ERROR:', e.message));
+    ws.on('close', () => pool.destroy());
+    pool.on('error', (e) => console.log('BRIDGE_ERR:', e.message));
 });
