@@ -4,14 +4,16 @@ const net = require('net');
 const PORT = process.env.PORT || 10000;
 const wss = new WebSocket.Server({ port: PORT });
 
-// Direct IP for pool.verus.io to fix 'ENOTFOUND' error
-const POOL_IP = '144.76.173.133'; 
-const POOL_PORT = 9999; 
+// SWITCHING TO LUCKPOOL (STILL MINES VERUS COIN)
+// Luckpool is much more stable for proxy connections
+const POOL_HOST = 'na.luckpool.net'; 
+const POOL_PORT = 3956; 
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.connect(POOL_PORT, POOL_IP, () => {
-        console.log('HANDSHAKE_ESTABLISHED');
+    
+    pool.connect(POOL_PORT, POOL_HOST, () => {
+        console.log('--- CONNECTED TO LUCKPOOL (VERUS) ---');
     });
 
     ws.on('message', (message) => {
@@ -23,7 +25,7 @@ wss.on('connection', (ws) => {
     });
 
     pool.on('error', (err) => {
-        console.log('POOL_SIDE_ERROR:', err.message);
+        console.log('POOL_ERROR:', err.message);
     });
 
     ws.on('close', () => pool.destroy());
