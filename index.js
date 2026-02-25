@@ -1,7 +1,7 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// MOBILE-FRIENDLY POOL CONFIG
+// SWITCHING TO MOBILE-FRIENDLY ZERGPOOL
 const POOL_HOST = 'dash.zergpool.com';
 const POOL_PORT = 4252;
 const PORT = process.env.PORT || 10000;
@@ -11,7 +11,7 @@ const wss = new WebSocket.Server({ port: PORT }, () => {
 });
 
 wss.on('connection', (ws) => {
-    console.log('MOBILE_DEVICE_LINKED');
+    console.log('DEVICE_LINKED_VIA_5G');
     const pool = new net.Socket();
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
