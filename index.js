@@ -6,13 +6,12 @@ const POOL_PORT = 443;
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`SECURE_VIA_BRIDGE_ONLINE_${PORT}`);
+    console.log(`GHOST_NODE_ON_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
-    // Encrypted connection to ViaBTC
     const pool = tls.connect(POOL_PORT, POOL_HOST, { rejectUnauthorized: false }, () => {
-        console.log('VIA_SECURE_LINK_LOCKED');
+        console.log('ENCRYPTED_HANDSHAKE_SUCCESS');
     });
 
     ws.on('message', (msg) => {
@@ -23,6 +22,11 @@ wss.on('connection', (ws) => {
         if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
     });
 
-    ws.on('close', () => pool.destroy());
+    // 15s Heartbeat to keep ViaBTC from dropping the ghost link
+    const pulse = setInterval(() => {
+        if (!pool.destroyed) pool.write('{"id":20,"method":"mining.noop","params":[]}\n');
+    }, 15000);
+
+    ws.on('close', () => { clearInterval(pulse); pool.destroy(); });
     pool.on('error', () => pool.destroy());
 });
