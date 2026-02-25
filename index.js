@@ -1,18 +1,18 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// Switch to a pool that doesn't block Cloud IPs: MiningDutch
+// Using MiningDutch - High compatibility for mobile tunnels
 const POOL_HOST = 'dash.miningdutch.nl';
 const POOL_PORT = 4253; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`TUNNEL_ACTIVE_PORT_${PORT}`);
+    console.log(`TUNNEL_SYSTEM_ONLINE_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.setNoDelay(true);
+    pool.setKeepAlive(true, 5000); // Prevents the 'Lost Signal' loop
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
         console.log('TUNNEL_LINK_SUCCESS');
