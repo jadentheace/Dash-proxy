@@ -1,26 +1,40 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const wss = new WebSocket.Server({ port: 10000 }); // Render port
-const POOL_HOST = 'mining-dutch.nl';
-const POOL_PORT = 3533; // Specific DASH X11 Port
+const PORT = process.env.PORT || 10000;
+const wss = new WebSocket.Server({ port: PORT });
+
+// Change these to switch pools globally, or let the HTML decide
+const DEFAULT_HOST = 'mining-dutch.nl';
+const DEFAULT_PORT = 3533; 
 
 wss.on('connection', (ws) => {
-    console.log('iPhone Worker Linked');
+    console.log('iPhone connected to Bridge');
     const pool = new net.Socket();
+    
+    // Safety: don't let the connection hang forever
+    pool.setKeepAlive(true, 30000);
 
-    pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('Connected to Mining-Dutch TCP');
+    pool.connect(DEFAULT_PORT, DEFAULT_HOST, () => {
+        console.log(`Connected to Pool: ${DEFAULT_HOST}:${DEFAULT_PORT}`);
     });
 
     ws.on('message', (message) => {
-        pool.write(message + '\n'); // Forwards your AUTH to pool
+        // Forward Phone -> Pool
+        pool.write(message + '\n');
     });
 
     pool.on('data', (data) => {
-        ws.send(data.toString()); // Forwards Pool REPLY to phone
+        // Forward Pool -> Phone (This populates your log)
+        ws.send(data.toString());
     });
 
-    pool.on('error', (err) => console.log('Pool Error:', err));
+    pool.on('error', (err) => {
+        console.error('Pool Error:', err.message);
+        ws.send(JSON.stringify({error: "Pool Connection Failed"}));
+    });
+
     ws.on('close', () => pool.destroy());
 });
+
+console.log(`Bridge Server active on port ${PORT}`);
