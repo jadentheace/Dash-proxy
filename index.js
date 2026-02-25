@@ -1,6 +1,7 @@
 const net = require('net');
 const WebSocket = require('ws');
 
+// TARGETING THE HIGHEST VELOCITY CPU PORT
 const TARGET_HOST = 'randomx.mine.zpool.ca';
 const TARGET_PORT = 6234; 
 const PROXY_PORT = process.env.PORT || 8080;
@@ -8,30 +9,21 @@ const PROXY_PORT = process.env.PORT || 8080;
 const wss = new WebSocket.Server({ port: PROXY_PORT });
 
 wss.on('connection', (ws) => {
-    let stratum = null;
+    // NITRO_PIPE: Direct socket-to-socket link
+    const stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
+    stratum.setNoDelay(true); // Disable Nagle's algorithm for zero-latency
 
-    const connectStratum = () => {
-        if (stratum) stratum.destroy();
-        stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
+    ws.on('message', (msg) => { stratum.write(msg + '\n'); });
 
-        stratum.on('data', (data) => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(data.toString());
-            }
-            // SESSION_GLITCH: If the pool sends a job, we prep for a reset to stay "New"
-            if (data.toString().includes('mining.notify')) {
-                console.log("INITIAL_JOB_GULPED: Resetting for next high-priority dump...");
-            }
-        });
-
-        stratum.on('error', () => setTimeout(connectStratum, 1000));
-    };
-
-    connectStratum();
-
-    ws.on('message', (msg) => {
-        if (stratum) stratum.write(msg + '\n');
+    stratum.on('data', (data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data.toString());
+        }
     });
 
-    ws.on('close', () => { if (stratum) stratum.destroy(); });
+    stratum.on('connect', () => console.log("NITRO_LINK_ESTABLISHED"));
+    ws.on('close', () => stratum.destroy());
+    stratum.on('error', () => ws.close());
 });
+
+console.log(`Nitro Proxy Active: ${PROXY_PORT} -> ${TARGET_HOST}:${TARGET_PORT}`);
