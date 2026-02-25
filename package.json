@@ -1,7 +1,7 @@
 {
-  "name": "dash-proxy",
+  "name": "dash-proxy-v125",
   "version": "1.0.0",
-  "description": "Stratum bridge for iPhone mining",
+  "description": "Stratum bridge for iPhone A16 mining",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
