@@ -8,23 +8,23 @@ const PORT = process.env.PORT || 10000;
 const wss = new WebSocket.Server({ port: PORT });
 
 wss.on('connection', (ws) => {
+    // Establishing a direct, high-priority SSL pipe
     const pool = tls.connect(POOL_PORT, POOL_HOST, { rejectUnauthorized: false });
 
-    // Keep the connection from idling
-    const heartbeat = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.ping();
-    }, 30000);
-
     pool.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
+        if (ws.readyState === WebSocket.OPEN) {
+            // Force data to string and send immediately
+            ws.send(data.toString('utf-8'));
+        }
     });
 
     ws.on('message', (msg) => {
-        if (!pool.destroyed) pool.write(msg + "\n");
+        if (!pool.destroyed) {
+            pool.write(msg + "\n");
+        }
     });
 
-    ws.on('close', () => {
-        clearInterval(heartbeat);
-        pool.destroy();
-    });
+    // Auto-cleanup to save server resources
+    pool.on('error', () => pool.destroy());
+    ws.on('close', () => pool.destroy());
 });
