@@ -1,12 +1,8 @@
 {
-  "name": "dash-proxy",
-  "version": "1.0.0",
-  "description": "High-speed mining bridge",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
   "dependencies": {
     "ws": "^8.13.0"
+  },
+  "scripts": {
+    "start": "node index.js"
   }
 }
