@@ -6,35 +6,33 @@ const POOL_HOST = 'na.veruspool.io';
 const POOL_PORT = 9999; 
 
 wss.on('connection', (ws) => {
-    console.log('--- NEW BLOG CONNECTION DETECTED ---');
-    const pool = new net.Socket();
+    let pool = new net.Socket();
     
-    pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('CONNECTED TO VERUSPOOL CLUSTER');
-    });
+    const connectToPool = () => {
+        pool.connect(POOL_PORT, POOL_HOST, () => {
+            console.log('CONNECTED TO VERUSPOOL');
+        });
+    };
+
+    connectToPool();
 
     ws.on('message', (message) => {
-        // Log the login attempt to your Render dashboard
-        console.log('DATA FROM BLOG:', message.toString());
         if (pool.writable) {
             pool.write(message + '\n');
         }
     });
 
     pool.on('data', (data) => {
-        // Send real pool data back to the blog terminal
-        ws.send(data.toString());
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data.toString());
+        }
     });
 
+    // Solve the Timeout: If the pool drops, wait 2 seconds and force reconnect
     pool.on('error', (err) => {
-        console.log('POOL ERROR:', err.message);
-        ws.send(JSON.stringify({type: "error", msg: "POOL_TIMEOUT"}));
+        console.log('Pool Error, Reconnecting...');
+        setTimeout(connectToPool, 2000);
     });
 
-    ws.on('close', () => {
-        console.log('BLOG DISCONNECTED');
-        pool.destroy();
-    });
+    ws.on('close', () => { pool.destroy(); });
 });
-
-console.log('PROXY ACTIVE ON PORT', process.env.PORT || 8080);
