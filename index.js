@@ -9,10 +9,8 @@ const wss = new WebSocket.Server({ port: PROXY_PORT });
 
 wss.on('connection', (ws) => {
     const stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
-    
-    // Enable keep-alive to prevent the "Disappearing Miner" bug
-    stratum.setKeepAlive(true, 10000);
     stratum.setNoDelay(true); 
+    stratum.setKeepAlive(true, 10000);
 
     ws.on('message', (msg) => { stratum.write(msg + '\n'); });
     stratum.on('data', (data) => { if (ws.readyState === WebSocket.OPEN) ws.send(data.toString()); });
@@ -20,4 +18,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Universal Bridge Live: Port ${TARGET_PORT}`);
+console.log(`OMNI_BRIDGE_LIVE: READY_FOR_PROFIT_SWITCH`);
