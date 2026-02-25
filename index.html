@@ -2,28 +2,25 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DASH MATRIX V125</title>
+    <title>DASH MATRIX V126</title>
     <style>
-        body { background:#000; color:#f00; font-family:monospace; margin:0; padding:15px; }
-        .box { border:4px solid #f00; padding:15px; min-height:92vh; display:flex; flex-direction:column; background:rgba(10,0,0,0.9); }
-        .log { flex-grow:1; background:#050000; color:#fff; font-size:10px; padding:10px; overflow-y:auto; border:1px solid #400; margin:10px 0; white-space:pre-wrap; }
+        body { background:#000; color:#f00; font-family:monospace; margin:0; padding:15px; text-shadow: 0 0 5px #f00; }
+        .box { border:4px solid #f00; padding:15px; min-height:90vh; display:flex; flex-direction:column; background:rgba(15,0,0,0.9); }
+        .log { flex-grow:1; background:#050000; color:#fff; font-size:10px; padding:10px; overflow-y:auto; border:1px solid #400; margin:10px 0; white-space:pre-wrap; box-shadow: inset 0 0 10px #000; }
         input { width:100%; padding:12px; background:#000; border:2px solid #f00; color:#fff; text-align:center; margin-bottom:10px; box-sizing:border-box; }
-        button { width:100%; padding:20px; font-weight:bold; border:none; cursor:pointer; font-size:18px; }
+        button { width:100%; padding:20px; font-weight:bold; border:none; cursor:pointer; font-size:18px; text-transform:uppercase; }
         .off { background:#333; color:#fff; }
-        .on { background:#f00; color:#000; box-shadow: 0 0 20px #f00; }
-        .status-light { display:inline-block; width:10px; height:10px; border-radius:50%; background:gray; margin-right:5px; }
+        .on { background:#f00; color:#000; box-shadow: 0 0 25px #f00; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="text-align:center; margin:0;">DASH MATRIX V125</h2>
-        <div style="text-align:center; font-size:11px; margin-top:5px;">
-            <span id="light" class="status-light"></span> <span id="status">CORE: STANDBY</span>
-        </div>
+        <h2 style="text-align:center; margin:0;">DASH MATRIX V126</h2>
+        <div id="status" style="text-align:center; font-size:12px; margin:5px 0; color:#555;">SYSTEM: STANDBY</div>
         
-        <div id="log" class="log">>>> AWAITING IGNITION...</div>
+        <div id="log" class="log">>>> STANDBY FOR HANDSHAKE...</div>
 
-        <input type="text" id="user" placeholder="MINING-DUTCH USERNAME" spellcheck="false">
+        <input type="text" id="user" placeholder="DASHBOARD USERNAME" spellcheck="false">
         <button id="btn" class="off">IGNITE CORE</button>
     </div>
 
@@ -32,14 +29,12 @@
         const log = document.getElementById('log');
         const btn = document.getElementById('btn');
         const status = document.getElementById('status');
-        const light = document.getElementById('light');
         let socket = null;
 
         btn.onclick = () => {
             if (!socket) {
                 const user = document.getElementById('user').value;
                 if(!user) return alert("Username required!");
-                
                 connect(user);
             } else {
                 socket.close();
@@ -48,28 +43,27 @@
 
         function connect(user) {
             socket = new WebSocket(PROXY_WS);
-            btn.className = "on"; btn.innerText = "KILL CORE";
-            status.innerText = "CORE: WAKING SERVER...";
-            light.style.background = "yellow";
+            btn.className = "on"; btn.innerText = "KILLING CORE...";
+            status.innerText = "CORE: LINKING...";
+            status.style.color = "yellow";
 
             socket.onopen = () => {
-                log.innerHTML += `\n<span style="color:#0f0">>>> TUNNEL OPEN. AUTHENTICATING...</span>`;
+                log.innerHTML += `\n<span style="color:#0f0">>>> [SOCKET] TUNNEL OPENED</span>`;
                 socket.send(JSON.stringify({"id": 1, "method": "mining.subscribe", "params": []}));
             };
 
             socket.onmessage = (e) => {
                 log.innerHTML += `\n[RECV] ${e.data}`;
                 log.scrollTop = log.scrollHeight;
-                
                 try {
                     const data = JSON.parse(e.data);
                     if(data.id === 1) {
                         socket.send(JSON.stringify({"id": 2, "method": "mining.authorize", "params": [user + ".iPhone", "x"]}));
-                        status.innerText = "CORE: AUTHORIZING";
+                        log.innerHTML += `\n[SENT] Authorizing: ${user}.iPhone`;
                     }
                     if(data.id === 2 && data.result === true) {
                         status.innerText = "CORE: MINING";
-                        light.style.background = "#0f0";
+                        status.style.color = "#0f0";
                         log.innerHTML += `\n<span style="color:#0f0; font-weight:bold;">>>> WORKER ACCEPTED ON DASHBOARD!</span>`;
                     }
                 } catch(err) {}
@@ -78,13 +72,9 @@
             socket.onclose = () => {
                 socket = null;
                 btn.className = "off"; btn.innerText = "IGNITE CORE";
-                status.innerText = "CORE: STANDBY";
-                light.style.background = "gray";
-                log.innerHTML += `\n<span style="color:gray">>>> DISCONNECTED.</span>`;
-            };
-
-            socket.onerror = () => {
-                log.innerHTML += `\n<span style="color:yellow">>>> SERVER SLEEPING. RETRYING...</span>`;
+                status.innerText = "SYSTEM: STANDBY";
+                status.style.color = "#555";
+                log.innerHTML += `\n<span style="color:gray">>>> CORE DISCONNECTED.</span>`;
             };
         }
     </script>
