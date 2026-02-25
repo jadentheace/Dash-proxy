@@ -1,28 +1,26 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// SWITCHING TO LUCKPOOL (MORE MOBILE FRIENDLY)
-const POOL_HOST = 'dash.luckpool.net';
-const POOL_PORT = 3105; 
+// Using Zergpool's most stable Dash port
+const POOL_HOST = 'dash.zergpool.com';
+const POOL_PORT = 4253; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`BRIDGE_LOCKED_ON_${PORT}`);
+    console.log(`BRIDGE_LIVE_PORT_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.setKeepAlive(true, 5000);
+    // Disable Nagle's Algorithm for instant data transfer
+    pool.setNoDelay(true);
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('LUCKPOOL_CONNECTED');
+        console.log('POOL_LINK_ESTABLISHED');
     });
 
     ws.on('message', (msg) => {
-        // ADDING SMALL DELAY TO STABILIZE 5G HANDSHAKE
-        setTimeout(() => {
-            if (pool.writable) pool.write(msg + '\n');
-        }, 100);
+        if (pool.writable) pool.write(msg + '\n');
     });
 
     pool.on('data', (data) => {
