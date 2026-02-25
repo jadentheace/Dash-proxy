@@ -1,23 +1,36 @@
-const WebSocket = require('ws');
 const net = require('net');
+const WebSocket = require('ws');
 
-// This forces the bridge to lock onto port 10000 immediately
-const wss = new WebSocket.Server({ port: 10000 }); 
+// MOBILE-FRIENDLY POOL CONFIG
+const POOL_HOST = 'dash.zergpool.com';
+const POOL_PORT = 4252;
+const PORT = process.env.PORT || 10000;
 
-wss.on('connection', (ws) => {
-    const pool = new net.Socket();
-    pool.connect(3433, 'dash.mine.zergpool.com');
-
-    pool.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
-    });
-
-    ws.on('message', (message) => {
-        pool.write(message + '\n');
-    });
-
-    ws.on('close', () => pool.destroy());
-    pool.on('error', () => ws.close());
+const wss = new WebSocket.Server({ port: PORT }, () => {
+    console.log(`BRIDGE_LOCKED_ON_${PORT}`);
 });
 
-console.log("BRIDGE_LOCKED_ON_10000");
+wss.on('connection', (ws) => {
+    console.log('MOBILE_DEVICE_LINKED');
+    const pool = new net.Socket();
+
+    pool.connect(POOL_PORT, POOL_HOST, () => {
+        console.log('ZERGPOOL_CONNECTED');
+    });
+
+    ws.on('message', (msg) => {
+        if (pool.writable) {
+            pool.write(msg + '\n');
+        }
+    });
+
+    pool.on('data', (data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data.toString());
+        }
+    });
+
+    pool.on('error', () => console.log('POOL_SYNC_ERROR'));
+    ws.on('close', () => pool.destroy());
+    pool.on('close', () => ws.close());
+});
