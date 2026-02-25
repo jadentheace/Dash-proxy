@@ -1,6 +1,7 @@
 const net = require('net');
 const WebSocket = require('ws');
 
+// THE UNIVERSAL HUB - Port 6234 is the standard for multi-switching
 const TARGET_HOST = 'mine.zpool.ca'; 
 const TARGET_PORT = 6234; 
 const PROXY_PORT = process.env.PORT || 8080;
@@ -23,4 +24,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Profit-Hunter Proxy Active on Port ${TARGET_PORT}`);
+console.log(`Universal Dashboard Fix: Port ${TARGET_PORT}`);
