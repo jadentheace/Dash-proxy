@@ -1,13 +1,13 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// SWITCHING TO VIABTC (MOST RELIABLE FOR CLOUD BRIDGES)
-const POOL_HOST = 'dash.viabtc.top';
-const POOL_PORT = 8888; 
+// Switch to a pool that doesn't block Cloud IPs: MiningDutch
+const POOL_HOST = 'dash.miningdutch.nl';
+const POOL_PORT = 4253; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT }, () => {
-    console.log(`FINAL_BRIDGE_STABLE_${PORT}`);
+    console.log(`TUNNEL_ACTIVE_PORT_${PORT}`);
 });
 
 wss.on('connection', (ws) => {
@@ -15,7 +15,7 @@ wss.on('connection', (ws) => {
     pool.setNoDelay(true);
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('VIABTC_LINK_LOCKED');
+        console.log('TUNNEL_LINK_SUCCESS');
     });
 
     ws.on('message', (msg) => {
@@ -27,6 +27,5 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => pool.destroy());
-    pool.on('close', () => ws.close());
     pool.on('error', () => pool.destroy());
 });
