@@ -2,14 +2,17 @@ const net = require('net');
 const WebSocket = require('ws');
 
 const POOL_HOST = 'dash.viabtc.top';
-const POOL_PORT = 3333; // Standard Raw Stratum Port
+const POOL_PORT = 3333; 
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT });
 
 wss.on('connection', (ws) => {
-    // Switching to a RAW TCP socket (No SSL interference)
+    // Establish raw TCP connection
     const pool = net.connect(POOL_PORT, POOL_HOST);
+    
+    // Ensure data is sent to pool immediately
+    pool.setNoDelay(true);
 
     pool.on('data', (data) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -18,7 +21,10 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('message', (msg) => {
-        if (!pool.destroyed) pool.write(msg + "\n");
+        if (!pool.destroyed) {
+            // Perfect shape: ensure exactly one newline per command
+            pool.write(msg.trim() + "\n");
+        }
     });
 
     pool.on('error', () => pool.destroy());
