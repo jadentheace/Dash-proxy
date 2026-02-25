@@ -11,10 +11,7 @@ wss.on('connection', (ws) => {
     const stratum = net.createConnection(TARGET_PORT, TARGET_HOST);
     stratum.setNoDelay(true); 
 
-    ws.on('message', (msg) => { 
-        // Force immediate delivery of your phone's hashes to the pool
-        stratum.write(msg + '\n'); 
-    });
+    ws.on('message', (msg) => { stratum.write(msg + '\n'); });
 
     stratum.on('data', (data) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -26,4 +23,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`V342_OVERRIDE_ACTIVE: PORT_${TARGET_PORT}`);
+console.log(`Ghost Proxy Active: Port ${TARGET_PORT}`);
