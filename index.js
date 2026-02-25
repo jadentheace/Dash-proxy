@@ -1,32 +1,35 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const PORT = process.env.PORT || 10000;
-const wss = new WebSocket.Server({ port: PORT });
-
+const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 const POOL_HOST = 'mining-dutch.nl';
 const POOL_PORT = 3533; 
 
 wss.on('connection', (ws) => {
     const pool = new net.Socket();
-    pool.setKeepAlive(true, 5000); // Keeps the A16 link from timing out
+    console.log('TUNNEL: Requesting connection to Pool...');
 
     pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('HANDSHAKE: Connected to Netherlands');
+        console.log('TUNNEL: Pool Connection Established.');
     });
 
-    ws.on('message', (msg) => {
-        // We trim and add a formal newline to match Stratum requirements
-        pool.write(msg.toString().trim() + '\n');
+    ws.on('message', (message) => {
+        // Fix: Ensure every message sent to the pool ends with exactly one newline
+        const cleanMsg = message.toString().trim();
+        pool.write(cleanMsg + '\n');
     });
 
     pool.on('data', (data) => {
-        // Forward pool data back to the iPhone log
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(data.toString());
-        }
+        // Fix: Send raw pool data back to the phone
+        ws.send(data.toString());
     });
 
-    ws.on('close', () => pool.destroy());
-    pool.on('error', () => ws.close());
+    pool.on('error', (err) => {
+        console.log('Pool Error: ' + err.message);
+        ws.close();
+    });
+
+    ws.on('close', () => {
+        pool.destroy();
+    });
 });
