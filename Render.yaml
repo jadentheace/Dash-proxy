@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: gz-bridge
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
