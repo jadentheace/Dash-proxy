@@ -1,8 +1,9 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-const TARGET_HOST = 'yespower.mine.zpool.ca'; 
-const TARGET_PORT = 6233; 
+// TARGETING THE UNIVERSAL HUB - ACCEPTS ALL ALGORITHMS
+const TARGET_HOST = 'mine.zpool.ca'; 
+const TARGET_PORT = 6234; 
 const PROXY_PORT = process.env.PORT || 8080;
 
 const wss = new WebSocket.Server({ port: PROXY_PORT });
@@ -23,4 +24,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Ghost Proxy Active: Port ${TARGET_PORT}`);
+console.log(`Universal Profit Proxy Active: Listening for all Algos on Port ${TARGET_PORT}`);
