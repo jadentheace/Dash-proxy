@@ -1,7 +1,6 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-// TARGETING THE UNIVERSAL HUB - ACCEPTS ALL ALGORITHMS
 const TARGET_HOST = 'mine.zpool.ca'; 
 const TARGET_PORT = 6234; 
 const PROXY_PORT = process.env.PORT || 8080;
@@ -24,4 +23,4 @@ wss.on('connection', (ws) => {
     stratum.on('error', () => ws.close());
 });
 
-console.log(`Universal Profit Proxy Active: Listening for all Algos on Port ${TARGET_PORT}`);
+console.log(`Profit-Hunter Proxy Active on Port ${TARGET_PORT}`);
