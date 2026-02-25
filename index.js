@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-// FORCING port 10000 to match your Render Log detection
+// This forces the bridge to lock onto port 10000 immediately
 const wss = new WebSocket.Server({ port: 10000 }); 
 
 wss.on('connection', (ws) => {
