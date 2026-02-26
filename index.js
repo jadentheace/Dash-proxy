@@ -1,19 +1,13 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const TARGET_HOST = 'pool.verus.io';
-const TARGET_PORT = 9998;
-
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    console.log(">> PROXY_UPLINK_START: VERUS_COMMUNITY_POOL");
-    
-    // Using a direct TCP net socket for better job delivery stability
+    // FORCING ZPOOL STRATUM HUB
     const client = new net.Socket();
-    
-    client.connect(TARGET_PORT, TARGET_HOST, () => {
-        console.log(">> SUCCESS: TCP_TUNNEL_ESTABLISHED");
+    client.connect(3300, 'verushash.mine.zpool.ca', () => {
+        console.log('Connected to Zpool Stratum');
     });
 
     ws.on('message', (msg) => {
