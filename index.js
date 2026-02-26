@@ -1,42 +1,29 @@
 const WebSocket = require('ws');
+const net = require('net');
 
-// THE TARGET: Forced to Verus Community Pool
-const TARGET_POOL = 'pool.verus.io:9998'; 
+const TARGET_HOST = 'pool.verus.io';
+const TARGET_PORT = 9998;
 
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
-wss.on('connection', (browserWs) => {
-    console.log('--- TARGETING VERUS COMMUNITY POOL (PORT 9998) ---');
-
-    // Create a direct TCP/Stratum connection to Verus, NOT Luckpool
-    const poolSocket = new WebSocket(`ws://${TARGET_POOL}`);
-
-    // Forward messages from your phone to the Verus pool
-    browserWs.on('message', (message) => {
-        if (poolSocket.readyState === WebSocket.OPEN) {
-            poolSocket.send(message);
-        }
+wss.on('connection', (ws) => {
+    console.log(">> PROXY_UPLINK_START: VERUS_COMMUNITY_POOL");
+    
+    // Using a direct TCP net socket for better job delivery stability
+    const client = new net.Socket();
+    
+    client.connect(TARGET_PORT, TARGET_HOST, () => {
+        console.log(">> SUCCESS: TCP_TUNNEL_ESTABLISHED");
     });
 
-    // Forward jobs from the Verus pool back to your phone
-    poolSocket.on('message', (data) => {
-        if (browserWs.readyState === WebSocket.OPEN) {
-            browserWs.send(data);
-        }
+    ws.on('message', (msg) => {
+        client.write(msg + '\n');
     });
 
-    poolSocket.on('open', () => {
-        console.log('>> SUCCESS: UPLINK ESTABLISHED TO VERUS_POOL');
+    client.on('data', (data) => {
+        ws.send(data.toString());
     });
 
-    poolSocket.on('error', (err) => {
-        console.error('>> POOL_CONNECTION_ERROR:', err.message);
-    });
-
-    browserWs.on('close', () => {
-        poolSocket.close();
-        console.log('--- CONNECTION TERMINATED ---');
-    });
+    client.on('close', () => ws.close());
+    ws.on('close', () => client.destroy());
 });
-
-console.log('GOD_PROXY_ACTIVE ON PORT', process.env.PORT || 8080);
