@@ -1,32 +1,42 @@
 const WebSocket = require('ws');
-const net = require('net');
 
-const PORT = process.env.PORT || 10000;
-const wss = new WebSocket.Server({ port: PORT });
+// THE TARGET: Forced to Verus Community Pool
+const TARGET_POOL = 'pool.verus.io:9998'; 
 
-// SWITCHING TO LUCKPOOL (STILL MINES VERUS COIN)
-// Luckpool is much more stable for proxy connections
-const POOL_HOST = 'na.luckpool.net'; 
-const POOL_PORT = 3956; 
+const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
-wss.on('connection', (ws) => {
-    const pool = new net.Socket();
-    
-    pool.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('--- CONNECTED TO LUCKPOOL (VERUS) ---');
+wss.on('connection', (browserWs) => {
+    console.log('--- TARGETING VERUS COMMUNITY POOL (PORT 9998) ---');
+
+    // Create a direct TCP/Stratum connection to Verus, NOT Luckpool
+    const poolSocket = new WebSocket(`ws://${TARGET_POOL}`);
+
+    // Forward messages from your phone to the Verus pool
+    browserWs.on('message', (message) => {
+        if (poolSocket.readyState === WebSocket.OPEN) {
+            poolSocket.send(message);
+        }
     });
 
-    ws.on('message', (message) => {
-        if (pool.writable) pool.write(message + '\n');
+    // Forward jobs from the Verus pool back to your phone
+    poolSocket.on('message', (data) => {
+        if (browserWs.readyState === WebSocket.OPEN) {
+            browserWs.send(data);
+        }
     });
 
-    pool.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
+    poolSocket.on('open', () => {
+        console.log('>> SUCCESS: UPLINK ESTABLISHED TO VERUS_POOL');
     });
 
-    pool.on('error', (err) => {
-        console.log('POOL_ERROR:', err.message);
+    poolSocket.on('error', (err) => {
+        console.error('>> POOL_CONNECTION_ERROR:', err.message);
     });
 
-    ws.on('close', () => pool.destroy());
+    browserWs.on('close', () => {
+        poolSocket.close();
+        console.log('--- CONNECTION TERMINATED ---');
+    });
 });
+
+console.log('GOD_PROXY_ACTIVE ON PORT', process.env.PORT || 8080);
