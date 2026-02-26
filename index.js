@@ -4,10 +4,10 @@ const net = require('net');
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    // FORCING ZPOOL STRATUM HUB
+    // HARD-CODED TO ZPOOL VERUSHASH PORT 3300
     const client = new net.Socket();
     client.connect(3300, 'verushash.mine.zpool.ca', () => {
-        console.log('Connected to Zpool Stratum');
+        console.log('Zpool Connection Secured');
     });
 
     ws.on('message', (msg) => {
