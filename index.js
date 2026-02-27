@@ -1,37 +1,29 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const POOL = { host: 'flex.mine.zpool.ca', port: 3581 };
+// SWITCHING TO EMCD (More mobile-friendly for Dash)
+const POOL = { host: 'gate.emcd.io', port: 3333 }; 
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    console.log('--- [UPLINK] IPHONE_INITIATED ---');
+    console.log('--- MOBILE_UPLINK_ESTABLISHED ---');
     const stratum = new net.Socket();
-    
-    stratum.setKeepAlive(true, 1000);
-    stratum.setNoDelay(true); // Disable Nagle's algorithm for instant packet delivery
+    stratum.setKeepAlive(true, 5000);
 
     stratum.connect(POOL.port, POOL.host, () => {
-        console.log('--- [!] CONNECTED_TO_ZPOOL_DIRECT ---');
+        console.log(`--- CONNECTED_TO_POOL: ${POOL.host} ---`);
     });
 
     ws.on('message', (msg) => {
-        if (stratum.writable) {
-            // Convert to raw Buffer to bypass string-handling filters
-            stratum.write(Buffer.from(msg.toString().trim() + '\n', 'utf8'));
-        }
+        if (stratum.writable) stratum.write(msg.toString().trim() + '\n');
     });
 
     stratum.on('data', (chunk) => {
-        console.log('--- [JOB] DATA_STREAM_INBOUND ---');
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(chunk.toString());
-        }
+        if (ws.readyState === WebSocket.OPEN) ws.send(chunk.toString());
     });
 
-    stratum.on('error', (e) => console.log('NET_ERR:', e.message));
+    stratum.on('error', (e) => console.log('POOL_CONNECTION_ERROR:', e.message));
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-
-console.log('OBSIDIAN_V31_RAW_PIPE_ONLINE');
+console.log('REBUILD_V32_UNIVERSAL_PROXY_ACTIVE');
