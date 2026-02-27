@@ -1,32 +1,28 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const TARGET = { host: 'flex.mine.zpool.ca', port: 3581 };
+const POOL = { host: 'flex.mine.zpool.ca', port: 3581 };
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    console.log('--- IPHONE_CORE_ATTACHED ---');
     const stratum = new net.Socket();
-    
-    // Crucial: Set a 5-second keepalive to prevent Render drop-outs
-    stratum.setKeepAlive(true, 5000);
+    stratum.setKeepAlive(true, 10000); // Prevents "UPLINK_TERMINATED"
 
-    stratum.connect(TARGET.port, TARGET.host, () => {
-        console.log('--- TUNNEL_TO_ZPOOL_LOCKED ---');
+    stratum.connect(POOL.port, POOL.host, () => {
+        console.log('--- TCP_BRIDGE_ESTABLISHED ---');
     });
 
-    ws.on('message', (msg) => {
-        // Ensure every command ends with the mandatory newline
-        if (stratum.writable) stratum.write(msg.toString().trim() + '\n');
+    ws.on('message', (data) => {
+        // Ensure data is sent as a clean Stratum line
+        if (stratum.writable) stratum.write(data.toString().trim() + '\n');
     });
 
-    stratum.on('data', (data) => {
-        // Relay pool jobs back to iPhone immediately
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
+    stratum.on('data', (chunk) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(chunk.toString());
     });
 
-    stratum.on('error', (e) => console.log('STRATUM_ERR:', e.message));
+    stratum.on('error', () => ws.close());
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-console.log('DASH_BRIDGE_V25_ONLINE');
+console.log('V26_HARDENED_PROXY_READY');
