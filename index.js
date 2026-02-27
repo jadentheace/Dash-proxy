@@ -1,31 +1,32 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const POOL = { host: 'flex.mine.zpool.ca', port: 3581 };
+const TARGET = { host: 'flex.mine.zpool.ca', port: 3581 };
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    console.log('--- TUNNEL_OPEN: IPHONE_14_CORE_SYNC ---');
+    console.log('--- IPHONE_CORE_ATTACHED ---');
     const stratum = new net.Socket();
     
-    // Use low-level binary piping
-    stratum.connect(POOL.port, POOL.host, () => {
-        console.log('--- SUCCESS: ZPOOL_BINARY_HANDSHAKE_COMPLETE ---');
+    // Crucial: Set a 5-second keepalive to prevent Render drop-outs
+    stratum.setKeepAlive(true, 5000);
+
+    stratum.connect(TARGET.port, TARGET.host, () => {
+        console.log('--- TUNNEL_TO_ZPOOL_LOCKED ---');
     });
 
-    ws.on('message', (buffer) => {
-        // Force append the Stratum line-break directly to the buffer
-        const cmd = buffer.toString().trim() + '\n';
-        if (stratum.writable) stratum.write(cmd);
+    ws.on('message', (msg) => {
+        // Ensure every command ends with the mandatory newline
+        if (stratum.writable) stratum.write(msg.toString().trim() + '\n');
     });
 
-    stratum.on('data', (chunk) => {
-        // Relay raw binary back to the iPhone
-        if (ws.readyState === WebSocket.OPEN) ws.send(chunk);
+    stratum.on('data', (data) => {
+        // Relay pool jobs back to iPhone immediately
+        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
     });
 
-    stratum.on('error', () => ws.close());
+    stratum.on('error', (e) => console.log('STRATUM_ERR:', e.message));
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-console.log('BINARY_BRIDGE_V23_LIVE');
+console.log('DASH_BRIDGE_V25_ONLINE');
