@@ -1,30 +1,39 @@
 const WebSocket = require('ws');
 const net = require('net');
 
+// ZPOOL FLEX TARGET
 const POOL = { host: 'flex.mine.zpool.ca', port: 3581 };
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    console.log('--- [!] IPHONE_14_CONNECTED_TO_PROXY ---');
+    console.log('--- [SIGNAL] IPHONE_14_UPLINK_FOUND ---');
     const stratum = new net.Socket();
     
+    // Force the TCP socket to stay open even if the phone screen dims
+    stratum.setKeepAlive(true, 5000); 
+
     stratum.connect(POOL.port, POOL.host, () => {
-        console.log('--- [!] PROXY_LINKED_TO_ZPOOL ---');
+        console.log('--- [SUCCESS] CONNECTED_TO_ZPOOL_PORT_3581 ---');
     });
 
-    ws.on('message', (data) => {
-        console.log('--- [->] IPHONE_SENDING_DATA: ' + data.toString().substring(0, 30));
-        if (stratum.writable) stratum.write(data.toString().trim() + '\n');
+    ws.on('message', (msg) => {
+        // Zpool requires raw strings terminated with exactly \n
+        if (stratum.writable) {
+            stratum.write(msg.toString().trim() + '\n');
+        }
     });
 
     stratum.on('data', (chunk) => {
-        console.log('--- [<-] POOL_SENDING_JOB ---');
-        if (ws.readyState === WebSocket.OPEN) ws.send(chunk.toString());
+        // Log to Render so you can see the jobs coming in
+        console.log('--- [JOB] DATA_RECEIVED_FROM_POOL ---');
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(chunk.toString());
+        }
     });
 
-    stratum.on('error', (e) => console.log('STRATUM_ERR:', e.message));
+    stratum.on('error', (err) => console.log('STRATUM_ERROR:', err.message));
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
 
-console.log('V29_DEEP_PIPE_ONLINE_READY');
+console.log('TITAN_LINK_V29_PRODUCTION_READY');
