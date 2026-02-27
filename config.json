@@ -1,14 +1,11 @@
+cat <<EOF > config.json
 {
     "autosave": true,
     "cpu": {
         "enabled": true,
-        "huge-pages": false,
         "hw-aes": true,
-        "priority": 5,
-        "memory-pool": true,
         "asm": "armv8",
-        "threads": 4,
-        "yield": true
+        "threads": 4
     },
     "pools": [
         {
@@ -16,9 +13,8 @@
             "url": "prohashing.com:443",
             "user": "zminer",
             "pass": "a=dogecoin,n=zminer,address=DF94rPbSvvW7rJYfhs9tYwijf3KX3gWLEdi,d=100",
-            "tls": true,
-            "keepalive": true
+            "tls": true
         }
-    ],
-    "donate-level": 1
+    ]
 }
+EOF
