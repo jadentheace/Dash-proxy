@@ -1,43 +1,36 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-// TARGETING THE EXACT FLEX PORT YOU DISCOVERED
 const TARGET_HOST = 'flex.mine.zpool.ca';
 const TARGET_PORT = 3581;
 
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
-    console.log('--- NEW_PHONE_LINK_ESTABLISHED ---');
-
-    // Open a direct TCP pipe to the Flex pool
     const stratum = new net.Socket();
-
+    
     stratum.connect(TARGET_PORT, TARGET_HOST, () => {
-        console.log('--- CONNECTED_TO_ZPOOL_FLEX_STRATUM ---');
+        console.log('--- LINKED_TO_ZPOOL_FLEX ---');
     });
 
-    // Pass data from Phone to Zpool
-    ws.on('message', (buffer) => {
-        stratum.write(buffer + '\n');
+    // Pipe from Phone to Zpool
+    ws.on('message', (msg) => {
+        stratum.write(msg + '\n');
     });
 
-    // Pass data from Zpool back to Phone
+    // Pipe from Zpool to Phone with Activity Log
     stratum.on('data', (data) => {
+        const raw = data.toString();
+        if (raw.includes('mining.notify')) {
+            console.log('--- INBOUND_JOB_DETECTED ---');
+        }
         if (ws.readyState === WebSocket.OPEN) {
-            ws.send(data.toString());
+            ws.send(raw);
         }
     });
 
-    stratum.on('error', (err) => {
-        console.log('TCP_STRATUM_ERROR:', err.message);
-        ws.close();
-    });
-
-    ws.on('close', () => {
-        stratum.destroy();
-        console.log('LINK_TERMINATED');
-    });
+    stratum.on('error', () => ws.close());
+    ws.on('close', () => stratum.destroy());
 });
 
-console.log('DASH_PROXY_V14_PIPELINE_ACTIVE');
+console.log('DASH_PROXY_V15_READY');
