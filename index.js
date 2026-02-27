@@ -1,31 +1,25 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const POOL_HOST = 'flex.mine.zpool.ca';
-const POOL_PORT = 3581;
-
+const TARGET = { host: 'flex.mine.zpool.ca', port: 3581 };
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
+    console.log('--- !!! INCOMING_IPHONE_STRIKE !!! ---');
     const stratum = new net.Socket();
     
-    // Force the connection to stay alive
-    stratum.setKeepAlive(true, 5000);
-
-    stratum.connect(POOL_PORT, POOL_HOST, () => {
-        console.log('ZPOOL_LINK_ESTABLISHED');
+    stratum.connect(TARGET.port, TARGET.host, () => {
+        console.log('--- POOL_BRIDGE_ACTIVE ---');
     });
 
-    ws.on('message', (msg) => {
-        if (stratum.writable) stratum.write(msg + '\n');
+    ws.on('message', (m) => { if(stratum.writable) stratum.write(m + '\n'); });
+    
+    stratum.on('data', (d) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(d.toString());
     });
 
-    stratum.on('data', (data) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
-    });
-
-    // Auto-reconnect on pool drop
+    stratum.on('error', () => ws.close());
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-console.log('IPHONE_14_PROXY_V20_ONLINE');
+console.log('V21_FORCE_READY');
