@@ -1,20 +1,19 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-// ZPOOL TARGETS
-const HOST = 'flex.mine.zpool.ca';
-const PORT = 3581;
+const POOL_HOST = 'flex.mine.zpool.ca';
+const POOL_PORT = 3581;
 
 const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
     const stratum = new net.Socket();
     
-    // Bypass Render's 30-second default timeout
-    stratum.setKeepAlive(true, 5000); 
+    // Force the connection to stay alive
+    stratum.setKeepAlive(true, 5000);
 
-    stratum.connect(PORT, HOST, () => {
-        console.log('--- LINKED_TO_ZPOOL ---');
+    stratum.connect(POOL_PORT, POOL_HOST, () => {
+        console.log('ZPOOL_LINK_ESTABLISHED');
     });
 
     ws.on('message', (msg) => {
@@ -25,9 +24,8 @@ wss.on('connection', (ws) => {
         if (ws.readyState === WebSocket.OPEN) ws.send(data.toString());
     });
 
-    stratum.on('error', () => ws.close());
+    // Auto-reconnect on pool drop
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-
-console.log('PROXY_V19_IPHONE_OPTIMIZED');
+console.log('IPHONE_14_PROXY_V20_ONLINE');
