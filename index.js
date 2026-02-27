@@ -6,15 +6,16 @@ const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
     const stratum = new net.Socket();
-    stratum.setKeepAlive(true, 10000); // Prevents "UPLINK_TERMINATED"
+    // High-frequency keep-alive prevents Render from killing the connection
+    stratum.setKeepAlive(true, 3000); 
 
     stratum.connect(POOL.port, POOL.host, () => {
-        console.log('--- TCP_BRIDGE_ESTABLISHED ---');
+        console.log('--- SYSTEM: RAW_STRATUM_BRIDGE_ACTIVE ---');
     });
 
-    ws.on('message', (data) => {
-        // Ensure data is sent as a clean Stratum line
-        if (stratum.writable) stratum.write(data.toString().trim() + '\n');
+    ws.on('message', (msg) => {
+        // Append raw line-break for Flex protocol compatibility
+        if (stratum.writable) stratum.write(msg.toString().trim() + '\n');
     });
 
     stratum.on('data', (chunk) => {
@@ -25,4 +26,5 @@ wss.on('connection', (ws) => {
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-console.log('V26_HARDENED_PROXY_READY');
+
+console.log('FINAL_ENGINE_V27_DEPLOYED');
