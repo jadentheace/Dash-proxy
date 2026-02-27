@@ -6,19 +6,20 @@ const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
 
 wss.on('connection', (ws) => {
     const stratum = new net.Socket();
-    // High-frequency keep-alive prevents Render from killing the connection
-    stratum.setKeepAlive(true, 3000); 
+    // Setting a low-latency keep-alive to stay "locked" to the pool
+    stratum.setKeepAlive(true, 1000); 
 
     stratum.connect(POOL.port, POOL.host, () => {
-        console.log('--- SYSTEM: RAW_STRATUM_BRIDGE_ACTIVE ---');
+        console.log('--- TUNNEL_LOCKED: BYPASSING_PROXY_FILTERS ---');
     });
 
-    ws.on('message', (msg) => {
-        // Append raw line-break for Flex protocol compatibility
-        if (stratum.writable) stratum.write(msg.toString().trim() + '\n');
+    ws.on('message', (buffer) => {
+        // We must append the HEX line-break for Zpool to 'wake up'
+        if (stratum.writable) stratum.write(buffer.toString().trim() + '\n');
     });
 
     stratum.on('data', (chunk) => {
+        // Send raw binary back to the iPhone
         if (ws.readyState === WebSocket.OPEN) ws.send(chunk.toString());
     });
 
@@ -26,5 +27,4 @@ wss.on('connection', (ws) => {
     stratum.on('close', () => ws.close());
     ws.on('close', () => stratum.destroy());
 });
-
-console.log('FINAL_ENGINE_V27_DEPLOYED');
+console.log('V28_RAW_PIPE_READY');
